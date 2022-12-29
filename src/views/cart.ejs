@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<%- include ('./partials/head') %>
+
+    <body>
+        <script src="./scripts/addCart.js"></script>
+        <script src="./scripts/updateCart.js"></script>
+        <script src="./scripts/removeCart.js"></script>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const localStorage = window.localStorage;
+
+                const currentUserCart = JSON.parse(localStorage.getItem("currentUserCart"));
+
+                if (currentUserCart == null || currentUserCart.length == 0) {
+                    const emptyCart = document.getElementById("emptyCart");
+                    const currentCart = document.getElementById("currentCart");
+                    emptyCart.style.display = 'block';
+                    currentCart.style.display = 'none';
+                    return;
+                }
+
+                let subtotal = 0;
+                const cartTableDOM = document.getElementById("cart-table");
+                cartTableDOM.textContent = "";
+                const theadNode = document.createElement("thead");
+                const thead_trNode = document.createElement("tr");
+                const thead_th1Node = document.createElement("th");
+                thead_th1Node.textContent = "Producto"
+                const thead_th2Node = document.createElement("th");
+                thead_th2Node.textContent = "Cantidad"
+                const thead_th3Node = document.createElement("th");
+                thead_th3Node.textContent = "Precio"
+                const thead_th4Node = document.createElement("th");
+                thead_th4Node.textContent = "Total"
+                const thead_th5Node = document.createElement("th");
+                thead_th5Node.textContent = "Eliminar"
+
+                thead_trNode.appendChild(thead_th1Node);
+                thead_trNode.appendChild(thead_th2Node);
+                thead_trNode.appendChild(thead_th3Node);
+                thead_trNode.appendChild(thead_th4Node);
+                thead_trNode.appendChild(thead_th5Node);
+                theadNode.appendChild(thead_trNode);
+
+                const tbodyNode = document.createElement("tbody");
+
+                currentUserCart.forEach((element) => {
+                    subtotal += +element.total;
+                    const trNode = document.createElement("tr");
+                    // Image and name
+                    const td1Node = document.createElement("td");
+                    td1Node.classList.add("cart_product_img");
+                    const td1_aNode = document.createElement("a");
+                    td1_aNode.setAttribute("href", "#");
+                    const td1_imgNode = document.createElement("img");
+                    td1_imgNode.setAttribute("src", element.imgsrc);
+                    td1_imgNode.setAttribute("alt", "product" + element.id);
+                    const td1_h5Node = document.createElement("h5");
+                    td1_h5Node.textContent = element.name;
+
+                    td1_aNode.appendChild(td1_imgNode);
+                    td1Node.appendChild(td1_aNode);
+                    td1Node.appendChild(td1_h5Node);
+                    // Quantity
+                    const td2Node = document.createElement("td");
+                    const td2_divNode = document.createElement("div");
+                    td2_divNode.classList.add("quantity");
+                    const td2_span1Node = document.createElement("span");
+                    td2_span1Node.classList.add("qty-minus");
+                    const td2_i1Node = document.createElement("i");
+                    td2_i1Node.classList.add("fa");
+                    td2_i1Node.classList.add("fa-minus");
+                    td2_i1Node.onclick = function() {
+                        decreaseQuantity(element.id);
+                        window.document.dispatchEvent(
+                            new Event("DOMContentLoaded", {
+                                bubbles: true,
+                                cancelable: true,
+                            })
+                        );
+                    };
+                    const td2_inputNode = document.createElement("input");
+                    td2_inputNode.classList.add("qty-text");
+                    td2_inputNode.setAttribute("type", "number");
+                    td2_inputNode.setAttribute("id", "qty");
+                    td2_inputNode.setAttribute("value", element.quantity);
+                    td2_inputNode.setAttribute("readonly", "true");
+                    const td2_span2Node = document.createElement("span");
+                    td2_span2Node.classList.add("qty-plus");
+                    const td2_i2Node = document.createElement("i");
+                    td2_i2Node.classList.add("fa");
+                    td2_i2Node.classList.add("fa-plus");
+                    td2_i2Node.onclick = function() {
+                        increaseQuantity(element.id);
+                        window.document.dispatchEvent(
+                            new Event("DOMContentLoaded", {
+                                bubbles: true,
+                                cancelable: true,
+                            })
+                        );
+                    };
+                    td2_span1Node.appendChild(td2_i1Node);
+                    td2_span2Node.appendChild(td2_i2Node);
+                    td2_divNode.appendChild(td2_span1Node);
+                    td2_divNode.appendChild(td2_inputNode);
+                    td2_divNode.appendChild(td2_span2Node);
+                    td2Node.appendChild(td2_divNode);
+                    // Price
+                    const td3Node = document.createElement("td");
+                    td3Node.textContent = "$" + parseFloat(element.price.toString()).toFixed(2);
+                    // Total
+                    const td4Node = document.createElement("td");
+                    td4Node.textContent = "$" + parseFloat(element.total.toString()).toFixed(2);
+                    // Remove product from cart
+                    const td5Node = document.createElement("td");
+                    td5Node.classList.add("text-center");
+                    const td5_iNode = document.createElement("i");
+                    td5_iNode.classList.add("fa-solid");
+                    td5_iNode.classList.add("fa-x");
+                    td5_iNode.classList.add("icon_close");
+                    td5_iNode.onclick = function() {
+                        removeProductFromCart(element.id);
+                        window.document.dispatchEvent(
+                            new Event("DOMContentLoaded", {
+                                bubbles: true,
+                                cancelable: true,
+                            })
+                        );
+                    };
+
+                    td5Node.appendChild(td5_iNode);
+
+                    trNode.appendChild(td1Node);
+                    trNode.appendChild(td2Node);
+                    trNode.appendChild(td3Node);
+                    trNode.appendChild(td4Node);
+                    trNode.appendChild(td5Node);
+                    tbodyNode.appendChild(trNode);
+                });
+
+                cartTableDOM.appendChild(theadNode);
+                cartTableDOM.appendChild(tbodyNode);
+
+                let discount = parseFloat((subtotal * 0.25).toString());
+                let total = parseFloat((subtotal - discount).toString());
+                const cartTotalDOM = document.getElementById("section-cart-total");
+                cartTotalDOM.textContent = "";
+                const containerDivNode = document.createElement("div");
+                containerDivNode.classList.add("container");
+                containerDivNode.classList.add("cart-container");
+
+                // Total Cart
+                const totalCartDivNode = document.createElement("div");
+                totalCartDivNode.classList.add("cart-total");
+                // Title
+                const h5Node = document.createElement("h5");
+                h5Node.textContent = "Total Carrito";
+                // Subtotal
+                const subtotalDivNode = document.createElement("div");
+                subtotalDivNode.classList.add("subtotal");
+                subtotalDivNode.classList.add("justify-content-between");
+                const subtotal_h5Node_1 = document.createElement("h5");
+                subtotal_h5Node_1.textContent = "Subtotal";
+                const subtotal_h5Node_2 = document.createElement("h5");
+                subtotal_h5Node_2.textContent = `$${subtotal.toFixed(2)}`;
+
+                subtotalDivNode.appendChild(subtotal_h5Node_1);
+                subtotalDivNode.appendChild(subtotal_h5Node_2);
+                // Discount
+                const discountDivNode = document.createElement("div");
+                discountDivNode.classList.add("subtotal");
+                discountDivNode.classList.add("justify-content-between");
+                const discount_h5Node_1 = document.createElement("h5");
+                discount_h5Node_1.textContent = "Descuento";
+                const discount_h5Node_2 = document.createElement("h5");
+                discount_h5Node_2.textContent = `$${discount.toFixed(2)}`;
+
+                discountDivNode.appendChild(discount_h5Node_1);
+                discountDivNode.appendChild(discount_h5Node_2);
+                // Total
+                const totalDivNode = document.createElement("div");
+                totalDivNode.classList.add("total");
+                totalDivNode.classList.add("justify-content-between");
+                const total_h5Node_1 = document.createElement("h5");
+                total_h5Node_1.textContent = "Total";
+                const total_h5Node_2 = document.createElement("h5");
+                total_h5Node_2.textContent = `$${total.toFixed(2)}`;
+
+                totalDivNode.appendChild(total_h5Node_1);
+                totalDivNode.appendChild(total_h5Node_2);
+                // Buttons             
+                const buttonsDivNode = document.createElement("div");
+                buttonsDivNode.classList.add("product-options");
+                buttonsDivNode.classList.add("mt-15");
+                const buttons_a1Node = document.createElement("button");
+                buttons_a1Node.classList.add("btn");
+                buttons_a1Node.classList.add("w-100");
+                buttons_a1Node.classList.add("mr-30");
+                buttons_a1Node.textContent = "FINALIZAR COMPRA";
+                const buttons_a2Node = document.createElement("button");
+                buttons_a2Node.classList.add("btn");
+                buttons_a2Node.classList.add("w-100");
+                buttons_a2Node.textContent = "LIMPIAR CARRITO";
+                buttons_a2Node.onclick = function() {
+                    cleanProductsCart();
+                    window.document.dispatchEvent(
+                        new Event("DOMContentLoaded", {
+                            bubbles: true,
+                            cancelable: true,
+                        })
+                    );
+                };
+
+                buttonsDivNode.appendChild(buttons_a1Node);
+                buttonsDivNode.appendChild(buttons_a2Node);
+
+                totalCartDivNode.appendChild(h5Node);
+                totalCartDivNode.appendChild(subtotalDivNode);
+                totalCartDivNode.appendChild(discountDivNode);
+                totalCartDivNode.appendChild(totalDivNode);
+                totalCartDivNode.appendChild(buttonsDivNode);
+
+                containerDivNode.appendChild(totalCartDivNode);
+                cartTotalDOM.appendChild(containerDivNode);
+
+            });
+        </script>
+
+        <% if(username != ""){ %>
+            <%- include ('./partials/headerLoggedIn') %>
+                <% } else{ %>
+                    <%- include ('./partials/header') %>
+                        <% } %>
+
+
+                            <div class="breadcrumb-section">
+                                <div class="container">
+                                    <div class="row">
+                                        <div class="width-100">
+                                            <nav aria-label="breadcrumb">
+                                                <ol class="breadcrumb">
+                                                    <li class="breadcrumb-item"><a href="#"><i class="fa fa-home"></i> Inicio</a></li>
+                                                    <li class="breadcrumb-item active" aria-current="page">Carrito</li>
+                                                </ol>
+                                            </nav>
+                                        </div>
+
+
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="emptyCart" style="display: none;">
+                                <div id="emptyCart">
+                                    <div style="text-align: center; margin-top: 50px;">
+                                        <img src="/images/emptyCart.png" alt="emptyCart" width="500">
+                                    </div>
+                                    <div style="text-align: center;" class="mt-15 mb-50">
+                                        <a href="/shop" class="btn">Ir a la tienda</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="currentCart">
+                                <section id="cart" class="bg-white section-padding-50 ">
+                                    <div class="container">
+
+                                        <div class="row justify-content-between">
+                                            <div class="width-100">
+
+                                                <table id="cart-table" class="cart-table">
+                                                    <!-- <thead>
+                                                        <tr>
+                                                            <th>Producto</th>
+                                                            <th>Cantidad</th>
+                                                            <th>Precio</th>
+                                                            <th>Total</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody> -->
+                                                    <!-- <tr>
+                                                            <td class="cart_product_img">
+                                                                <a href="#"><img src="images/product_mini_1.png" alt="product_1"></a>
+                                                                <h5>Termo</h5>
+                                                            </td>
+                                                            <td>
+                                                                <div class="quantity">
+                                                                    <span class="qty-minus"><i class="fa fa-minus" aria-hidden="true"></i></span>
+                                                                    <input type="text" class="qty-text" value="1">
+                                                                    <span class="qty-plus"><i class="fa fa-plus" aria-hidden="true"></i></span>
+                                                                </div>
+                                                            </td>
+                                                            <td>$99.99</td>
+                                                            <td>$99.99</td>
+                                                            <td><i class="fa-solid fa-x icon_close"></i></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="cart_product_img">
+                                                                <a href="#"><img src="images/product_mini_3.png" alt="product_3"></a>
+                                                                <h5>Mate Camionero</h5>
+                                                            </td>
+                                                            <td>
+                                                                <div class="quantity">
+                                                                    <span class="qty-minus"><i class="fa fa-minus" aria-hidden="true"></i></span>
+                                                                    <input type="text" class="qty-text" value="1">
+                                                                    <span class="qty-plus"><i class="fa fa-plus" aria-hidden="true"></i></span>
+                                                                </div>
+                                                            </td>
+                                                            <td>$99.99</td>
+                                                            <td>$99.99</td>
+                                                            <td><i class="fa-solid fa-x icon_close"></i></td>
+                                                        </tr> -->
+                                                    <!-- </tbody> -->
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section id="section-cart-total" class="bg-white section-padding-0-50">
+                                    <!-- <div class="container"> -->
+                                    <!-- <div class="cart-total">
+                                                <h5>Total Carrito</h5>
+                                                <div class="subtotal justify-content-between">
+                                                    <h5>Subtotal</h5>
+                                                    <h5>$99.99</h5>
+                                                </div>
+                                                <div class="total justify-content-between">
+                                                    <h5>Total</h5>
+                                                    <h5>$99.99</h5>
+                                                </div>
+                                                <div class="product-options mt-15">
+                                                    <a href="#" class="btn w-100 mr-30">FINALIZAR COMPRA</a>
+                                                    <a href="#" class="btn w-100">LIMPIAR CARRITO</a>
+                                                </div>
+                                            </div> -->
+                                    <!-- </div> -->
+                            </div>
+                            </section>
+                            </div>
+
+
+
+
+                            <%- include ('./partials/footer') %>
+
+
+                                <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+                                <script>
+                                    const increaseQuantity = function(id) {
+                                        var prodId = parseInt(id);
+                                        increaseProductQuantity(prodId);
+                                    }
+
+                                    const decreaseQuantity = function(id) {
+                                        var prodId = parseInt(id);
+                                        decreaseProductQuantity(prodId);
+                                    }
+                                </script>
+    </body>
+
+</html>
